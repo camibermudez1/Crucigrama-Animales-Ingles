@@ -1,2 +1,555 @@
 # Crucigrama-Animales-Ingles
 Objetivo: Reforzar la escritura y ortografía en inglés de los nombres de animales conocidos, desarrollando habilidades lingüísticas y de atención visual.
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crucigrama Infantil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff; /* Light blue background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 900px;
+            width: 100%;
+        }
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e40af; /* Dark blue */
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            width: 100%;
+        }
+        .crossword-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 50px); /* 5 squares wide */
+            grid-template-rows: repeat(7, 50px); /* 7 squares high */
+            border: 2px solid #3b82f6; /* Blue border */
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #e0f2fe; /* Lighter blue grid background */
+        }
+        .grid-cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #93c5fd; /* Lighter blue cell border */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e40af;
+            text-transform: uppercase;
+            background-color: #ffffff; /* Default cell background */
+            position: relative; /* Needed for absolute positioning of indicators */
+        }
+        .grid-cell.active {
+            background-color: #bfdbfe; /* Active cell background */
+        }
+        .grid-cell.empty {
+            background-color: #dbeafe; /* Lightest blue for explicitly empty cells */
+        }
+        .grid-cell input {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e40af;
+            border: none;
+            outline: none;
+            background-color: transparent;
+            text-transform: uppercase;
+            padding: 0;
+            margin: 0;
+        }
+        .hints-section {
+            background-color: #e0f2fe; /* Lighter blue background for hints */
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .hints-section h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .hint-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .hint-item {
+            font-size: 1.1rem;
+            color: #3b82f6;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .hint-item:last-child {
+            margin-bottom: 0;
+        }
+        .message-box {
+            background-color: #d1fae5; /* Green for success */
+            color: #065f46;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 25px;
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.5s ease-out;
+        }
+        .button-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .btn {
+            background-color: #3b82f6; /* Blue button */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover {
+            background-color: #2563eb; /* Darker blue on hover */
+            transform: translateY(-2px);
+        }
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        /* Container for multiple indicators within a cell */
+        .indicators-container {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            display: flex; /* Use flexbox to arrange multiple indicators horizontally */
+            flex-wrap: wrap; /* Allow indicators to wrap if too many */
+            gap: 1px; /* Small gap between indicators */
+            z-index: 10;
+            pointer-events: none; /* Allow clicks to pass through to the input */
+        }
+        /* Style for each individual word's indicator (emoji, number, arrow) */
+        .single-word-indicator {
+            font-size: 0.55em; /* Even smaller font size */
+            color: #4b5563; /* Subtle gray color */
+            opacity: 0.8; /* Make them subtle */
+            line-height: 1; /* Compact line height */
+            white-space: nowrap; /* Prevent breaking within one indicator */
+            padding: 0 1px; /* Minimal padding */
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .game-area {
+                flex-direction: row;
+                justify-content: center;
+                align-items: flex-start;
+            }
+            .crossword-grid {
+                margin-right: 30px; /* Space between grid and hints */
+            }
+        }
+
+        @media (max-width: 600px) {
+            .title {
+                font-size: 2rem;
+            }
+            .crossword-grid {
+                grid-template-columns: repeat(5, 40px);
+                grid-template-rows: repeat(7, 40px);
+            }
+            .grid-cell {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+            .grid-cell input {
+                font-size: 1.2rem;
+            }
+            .hints-section {
+                padding: 15px;
+            }
+            .hints-section h3 {
+                font-size: 1.5rem;
+            }
+            .hint-item {
+                font-size: 1rem;
+            }
+            .message-box {
+                font-size: 1rem;
+                padding: 10px 20px;
+            }
+            .btn {
+                font-size: 1rem;
+                padding: 10px 20px;
+            }
+            .indicators-container {
+                font-size: 0.5em; /* Adjust container font size for small screens */
+            }
+            .single-word-indicator {
+                font-size: 1em; /* Relative to parent .indicators-container */
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Crucigrama de Animales</h1>
+        <div class="game-area">
+            <div id="crosswordGrid" class="crossword-grid">
+                <!-- Grid cells will be generated here by JavaScript -->
+            </div>
+            <div class="hints-section">
+                <h3>Pistas</h3>
+                <ul class="hint-list">
+                    <li><b>Verticales:</b></li>
+                    <li class="hint-item">1. 🦆↓ Animal que dice cuak cuak (4 letras)</li>
+                    <li class="hint-item">2. 🐷↓ Animal que dice oink oink (3 letras)</li>
+                    <li class="hint-item">3. 🐒↓ Animal que come bananas (6 letras)</li>
+                    <li><b>Horizontales:</b></li>
+                    <li class="hint-item">4. 🦁→ Animal que tiene melena y ruge (4 letras)</li>
+                    <li class="hint-item">5. 🐶→ Animal que es el mejor amigo del humano (3 letras)</li>
+                    <li class="hint-item">6. 🐮→ Animal que dice moo (3 letras)</li>
+                </ul>
+            </div>
+        </div>
+        <div id="messageBox" class="message-box">
+            <!-- Messages will be displayed here -->
+        </div>
+        <div class="button-group">
+            <button id="resetButton" class="btn">Reiniciar</button>
+        </div>
+    </div>
+
+    <script>
+        const gridElement = document.getElementById('crosswordGrid');
+        const messageBox = document.getElementById('messageBox');
+        const resetButton = document.getElementById('resetButton');
+
+        // Define the crossword puzzle structure and words
+        // The grid is 5 columns wide and 7 rows high (0-indexed)
+        const GRID_WIDTH = 5;
+        const GRID_HEIGHT = 7;
+
+        // The exact solution grid as provided by the user (row, col)
+        // '' represents an empty cell.
+        const fullGridSolution = [
+            ['', '', '', '', 'M'], // Row 0 (A1-E1)
+            ['', '', 'P', '', 'O'], // Row 1 (A2-E2)
+            ['', 'L', 'I', 'O', 'N'], // Row 2 (A3-E3)
+            ['D', 'O', 'G', '', 'K'], // Row 3 (A4-E4)
+            ['U', '', '', '', 'E'], // Row 4 (A5-E5)
+            ['C', 'O', 'W', '', 'Y'], // Row 5 (A6-E6)
+            ['K', '', '', '', '']  // Row 6 (A7-E7)
+        ];
+
+        // Solution words, their positions, and associated emojis/arrows for hints.
+        // Positions are [row, col]. These define the words to be checked.
+        const words = [
+            { word: "DUCK",   start: [3, 0], direction: "vertical",   number: 1, emoji: "🦆", arrow: "↓" },
+            { word: "PIG",    start: [1, 2], direction: "vertical",   number: 2, emoji: "🐷", arrow: "↓" },
+            { word: "MONKEY", start: [0, 4], direction: "vertical",   number: 3, emoji: "🐒", arrow: "↓" },
+            { word: "LION",   start: [2, 1], direction: "horizontal", number: 4, emoji: "🦁", arrow: "→" },
+            // DOG starts at A4 (row 3, col 0), overlapping with DUCK
+            { word: "DOG",    start: [3, 0], direction: "horizontal", number: 5, emoji: "🐶", arrow: "→" },
+            // COW starts at A6 (row 5, col 0), overlapping with DUCK
+            { word: "COW",    start: [5, 0], direction: "horizontal", number: 6, emoji: "🐮", arrow: "→" }
+        ];
+
+        // Initialize a 2D array to represent the current user input in the grid
+        let currentGridState = Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(''));
+
+        // Keep track of which cells are part of a word and their correct letters for validation
+        const wordCells = {}; // Stores { 'row,col': 'correctLetter' }
+        // Stores { 'row,col': [{emoji: '...', number: '...', arrow: '...'}, ...] } for displaying hints
+        const initialCellIndicators = {};
+        let correctlyGuessedWords = new Set(); // To track individually completed words
+        let messageTimeoutId = null; // To manage temporary messages
+
+        function initializeGame() {
+            gridElement.innerHTML = ''; // Clear existing grid
+            hideMessage(); // Hide any active message
+            clearTimeout(messageTimeoutId); // Clear any pending message timeouts
+
+            // Reset current grid state and correctly guessed words
+            currentGridState = Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(''));
+            correctlyGuessedWords = new Set();
+
+            // Populate wordCells based on the fixed fullGridSolution
+            // This ensures only cells intended for letters are interactive
+            for (let r = 0; r < GRID_HEIGHT; r++) {
+                for (let c = 0; c < GRID_WIDTH; c++) {
+                    const cellLetter = fullGridSolution[r][c];
+                    const cellKey = `${r},${c}`;
+                    if (cellLetter !== '') {
+                        wordCells[cellKey] = cellLetter; // This cell should have an input
+                    } else {
+                        // Ensure it's not marked as a word cell if it's empty
+                        delete wordCells[cellKey];
+                    }
+                }
+            }
+
+            // Populate initialCellIndicators from the words array
+            // This handles multiple words starting in the same cell
+            for (const key in initialCellIndicators) { delete initialCellIndicators[key]; } // Clear previous indicators
+            words.forEach(wordObj => {
+                const { start, emoji, arrow, number } = wordObj;
+                const cellKey = `${start[0]},${start[1]}`;
+
+                if (!initialCellIndicators[cellKey]) {
+                    initialCellIndicators[cellKey] = []; // Initialize as an array
+                }
+                initialCellIndicators[cellKey].push({ emoji, number, arrow }); // Push the whole object
+            });
+
+            // Create grid cells in the DOM
+            for (let r = 0; r < GRID_HEIGHT; r++) {
+                for (let c = 0; c < GRID_WIDTH; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    const cellKey = `${r},${c}`;
+
+                    // Add indicators if it's a starting cell for a word
+                    if (initialCellIndicators[cellKey] && initialCellIndicators[cellKey].length > 0) {
+                        const indicatorsContainer = document.createElement('div');
+                        indicatorsContainer.classList.add('indicators-container');
+
+                        initialCellIndicators[cellKey].forEach(indicator => {
+                            const singleIndicatorSpan = document.createElement('span');
+                            singleIndicatorSpan.classList.add('single-word-indicator');
+                            // Combine emoji, number, and arrow into one span
+                            singleIndicatorSpan.innerHTML = `${indicator.emoji}${indicator.number}${indicator.arrow}`;
+                            indicatorsContainer.appendChild(singleIndicatorSpan);
+                        });
+                        cell.appendChild(indicatorsContainer);
+                    }
+
+                    if (wordCells[cellKey]) {
+                        // If it's an active cell (part of a word), add an input field
+                        cell.classList.add('active');
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.maxLength = '1'; // Only one letter per cell
+                        input.dataset.row = r;
+                        input.dataset.col = c;
+                        input.addEventListener('input', handleInput);
+                        input.addEventListener('keydown', handleKeyDown);
+                        cell.appendChild(input);
+                    } else {
+                        // If it's an empty cell as per the provided layout
+                        cell.classList.add('empty');
+                    }
+
+                    gridElement.appendChild(cell);
+                }
+            }
+        }
+
+        // Handle input change in a cell
+        function handleInput(event) {
+            let input = event.target;
+            const r = parseInt(input.dataset.row);
+            const c = parseInt(input.dataset.col);
+            let value = input.value.toUpperCase();
+
+            // Only allow letters
+            if (!/^[A-Z]$/.test(value) && value !== '') {
+                input.value = '';
+                value = '';
+            }
+
+            currentGridState[r][c] = value;
+
+            // Move focus to the next input
+            if (value !== '') {
+                moveFocus(r, c, 1); // Move right
+            }
+
+            checkWordsStatus(); // Check individual and overall word status
+        }
+
+        // Handle arrow key navigation
+        function handleKeyDown(event) {
+            const input = event.target;
+            let r = parseInt(input.dataset.row);
+            let c = parseInt(input.dataset.col);
+
+            switch (event.key) {
+                case 'ArrowUp':
+                    event.preventDefault();
+                    moveFocus(r, c, -GRID_WIDTH); // Move up (subtract cols to simulate row change)
+                    break;
+                case 'ArrowDown':
+                    event.preventDefault();
+                    moveFocus(r, c, GRID_WIDTH); // Move down (add cols to simulate row change)
+                    break;
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    moveFocus(r, c, -1); // Move left
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    moveFocus(r, c, 1); // Move right
+                    break;
+                case 'Backspace':
+                    // If the field is empty, move focus back
+                    if (input.value === '') {
+                        moveFocus(r, c, -1);
+                    }
+                    break;
+            }
+        }
+
+        // Function to move focus to the next/previous input cell
+        function moveFocus(currentRow, currentCol, offset) {
+            // Select all interactive input elements
+            const inputs = Array.from(gridElement.querySelectorAll('.grid-cell.active input[type="text"]'));
+            const currentIndex = inputs.findIndex(input =>
+                parseInt(input.dataset.row) === currentRow && parseInt(input.dataset.col) === currentCol
+            );
+
+            if (currentIndex !== -1) {
+                let nextIndex = currentIndex + offset;
+
+                // Loop to find the next valid input cell
+                while (nextIndex >= 0 && nextIndex < inputs.length) {
+                    const nextInput = inputs[nextIndex];
+                    if (nextInput) {
+                        nextInput.focus();
+                        nextInput.select(); // Select the text for easier replacement
+                        return; // Found a valid input, stop
+                    }
+                    // If the next calculated index is not an input, increment/decrement and try again
+                    nextIndex += (offset > 0 ? 1 : -1);
+                }
+            }
+        }
+
+        // Display message function, with optional temporary display
+        function showMessage(msg, isTemporary = false) {
+            clearTimeout(messageTimeoutId); // Clear any existing timeout
+            messageBox.textContent = msg;
+            messageBox.style.display = 'block';
+            if (isTemporary) {
+                messageTimeoutId = setTimeout(() => {
+                    hideMessage();
+                }, 3000); // Message disappears after 3 seconds
+            }
+        }
+
+        // Hide message
+        function hideMessage() {
+            messageBox.style.display = 'none';
+            messageBox.textContent = '';
+        }
+
+        // Check the status of all words and update messages
+        function checkWordsStatus() {
+            let allWordsCurrentlyCorrect = true;
+            let currentCompleteWords = new Set(); // Keep track of words that are currently correct in this check
+
+            words.forEach(wordObj => {
+                const { word, start, direction, emoji } = wordObj;
+                let [r, c] = start;
+                let submittedWord = '';
+
+                for (let i = 0; i < word.length; i++) {
+                    // Check if the current cell is within bounds of the solution grid
+                    if (r < GRID_HEIGHT && c < GRID_WIDTH) {
+                        submittedWord += currentGridState[r][c];
+                    } else {
+                        // This should ideally not happen if word definitions match grid size
+                        allWordsCurrentlyCorrect = false;
+                        break;
+                    }
+
+                    if (direction === "vertical") {
+                        r++;
+                    } else { // horizontal
+                        c++;
+                    }
+                }
+
+                if (submittedWord === word) {
+                    // Word is correct
+                    currentCompleteWords.add(word);
+                    if (!correctlyGuessedWords.has(word)) {
+                        // This word was just completed
+                        correctlyGuessedWords.add(word);
+                        showMessage(`¡Buen trabajo! Has completado ${emoji} ${word}!`, true);
+                    }
+                } else {
+                    // Word is incorrect
+                    allWordsCurrentlyCorrect = false;
+                    // If a previously correct word became incorrect, remove it
+                    if (correctlyGuessedWords.has(word)) {
+                        correctlyGuessedWords.delete(word);
+                    }
+                }
+            });
+
+            // After checking all words, determine the overall puzzle status
+            if (allWordsCurrentlyCorrect && correctlyGuessedWords.size === words.length) {
+                // All words are correct, show the final congratulations message
+                showMessage("Felicidades, sigue así");
+            } else if (messageBox.textContent === "Felicidades, sigue así" && !allWordsCurrentlyCorrect) {
+                // If the final congratulations message was showing, but now the puzzle is incomplete, hide it
+                hideMessage();
+            }
+        }
+
+        // Reset game on button click
+        resetButton.addEventListener('click', initializeGame);
+
+        // Initialize the game when the page loads
+        document.addEventListener('DOMContentLoaded', initializeGame);
+    </script>
+</body>
+</html>
+Elaborado por: Camila Bermudez
